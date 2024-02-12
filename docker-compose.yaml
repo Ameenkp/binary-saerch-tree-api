@@ -1,0 +1,46 @@
+version: '3.8'
+
+volumes:
+  postgres-data: {}
+
+networks:
+  my-app-network:
+
+services:
+  # PostgresSQL Database
+  postgres:
+    image: postgres:14.10
+    container_name: postgres-container
+    restart: unless-stopped
+    volumes:
+      - postgres-data:/var/lib/postgresql/data:rw
+    networks:
+      - my-app-network
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    ports:
+      - "5432:5432"
+    env_file:
+      - .env
+
+  # Spring Boot Application
+  spring-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: spring-app-container
+    restart: unless-stopped
+    depends_on:
+      - postgres
+    networks:
+      - my-app-network
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/user-db
+      SPRING_DATASOURCE_USERNAME: ${SPRING_DATASOURCE_USERNAME}
+      SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD}
+    ports:
+      - "8080:8080"
+    env_file:
+      - .env
